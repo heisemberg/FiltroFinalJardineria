@@ -69,7 +69,7 @@ namespace Api.Controllers
             return productosMasVendidos;
         }
 
-        [HttpGet("consulta9")]
+        [HttpGet("consulta10")]
         public async Task<IEnumerable<Producto>> GetProductosSinPedidos()
         {
             var productos = await _unitOfWork.Productos.GetAllAsync();
