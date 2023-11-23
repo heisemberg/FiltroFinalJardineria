@@ -42,6 +42,48 @@ namespace Api.Controllers
             return _mapper.Map<OficinaDto>(oficina);
         }
         
+        [HttpGet("consulta3")]
+        public async Task<IEnumerable<Oficina>> GetOficinasNoFrutales()
+        {
+            var oficinas = await _unitOfWork.Oficinas.GetAllAsync();
+            var empleados = await _unitOfWork.Empleados.GetAllAsync();
+            var clientes = await _unitOfWork.Clientes.GetAllAsync();
+            var productos = await _unitOfWork.Productos.GetAllAsync();
+            var pedidos = await _unitOfWork.Pedidos.GetAllAsync();
+            var detallePedidos = await _unitOfWork.DetallePedidos.GetAllAsync();
+            var pagos = await _unitOfWork.Pagos.GetAllAsync();
+
+            var consultas = from oficina in oficinas
+                            join empleado in empleados
+                            on oficina.CodigoOficina equals empleado.CodigoOficina into empleadosOficina
+                            from empleado in empleadosOficina.DefaultIfEmpty()
+                            join cliente in clientes
+                            on empleado.CodigoEmpleado equals cliente.CodigoEmpleadoRepVentas into clientesEmpleados
+                            from cliente in clientesEmpleados.DefaultIfEmpty()
+                            join pedido in pedidos
+                            on cliente.CodigoCliente equals pedido.CodigoCliente into pedidosClientes
+                            from pedido in pedidosClientes.DefaultIfEmpty()
+                            join detallePedido in detallePedidos
+                            on pedido.CodigoPedido equals detallePedido.CodigoPedido into detallePedidosPedidos
+                            from detallePedido in detallePedidosPedidos.DefaultIfEmpty()
+                            join producto in productos
+                            on detallePedido.CodigoProducto equals producto.CodigoProducto into productosDetallePedidos
+                            from producto in productosDetallePedidos.DefaultIfEmpty()
+                            where producto.Gama == "Frutales"
+                            select new Oficina
+                            {
+                                CodigoOficina = oficina.CodigoOficina,
+                                Ciudad = oficina.Ciudad,
+                                Pais = oficina.Pais,
+                                Region = oficina.Region,
+                                CodigoPostal = oficina.CodigoPostal,
+                                Telefono = oficina.Telefono,
+                                LineaDireccion1 = oficina.LineaDireccion1,
+                                LineaDireccion2 = oficina.LineaDireccion2,
+                                Empleados = oficina.Empleados
+                            };
+            return consultas.Distinct();
+        }
 
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]

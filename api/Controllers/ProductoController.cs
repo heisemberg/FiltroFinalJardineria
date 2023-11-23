@@ -42,8 +42,52 @@ namespace Api.Controllers
             return _mapper.Map<ProductoDto>(producto);
         }
 
- 
+        [HttpGet("consulta4")]
+        public async Task<IEnumerable<Producto>> GetProductosMasVendidos()
+        {
+            var productos = await _unitOfWork.Productos.GetAllAsync();
+            var detallePedidos = await _unitOfWork.DetallePedidos.GetAllAsync();
+            var pedidos = await _unitOfWork.Pedidos.GetAllAsync();
+          
 
+
+            var consultas = from producto in productos
+                            join detallePedido in detallePedidos
+                            on producto.CodigoProducto equals detallePedido.CodigoProducto
+                            join pedido in pedidos
+                            on detallePedido.CodigoPedido equals pedido.CodigoPedido
+                            group producto by producto.CodigoProducto into g
+                            orderby g.Count() descending
+                            select g.Key;
+
+            var productosMasVendidos = new List<Producto>();
+            foreach (var item in consultas)
+            {
+                var producto = await _unitOfWork.Productos.GetByIdAsync(item);
+                productosMasVendidos.Add(producto);
+            }
+            return productosMasVendidos;
+        }
+
+        [HttpGet("consulta9")]
+        public async Task<IEnumerable<Producto>> GetProductosSinPedidos()
+        {
+            var productos = await _unitOfWork.Productos.GetAllAsync();
+            var detallePedidos = await _unitOfWork.DetallePedidos.GetAllAsync();
+            var pedidos = await _unitOfWork.Pedidos.GetAllAsync();
+
+            var consultas = from producto in productos
+                            join detallePedido in detallePedidos
+                            on producto.CodigoProducto equals detallePedido.CodigoProducto into detallePedidosProductos
+                            from detallePedido in detallePedidosProductos.DefaultIfEmpty()
+                            join pedido in pedidos
+                            on detallePedido.CodigoPedido equals pedido.CodigoPedido into pedidosDetallePedidos
+                            from pedido in pedidosDetallePedidos.DefaultIfEmpty()
+                            where pedido.CodigoPedido == null
+                            select producto;
+
+            return consultas;
+        }
 
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]

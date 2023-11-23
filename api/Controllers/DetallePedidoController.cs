@@ -7,6 +7,7 @@ using Domain.Entities;
 using Domain.Interfaces;
 using Api.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using api.Dtos;
 
 namespace Api.Controllers
 {
@@ -41,6 +42,32 @@ namespace Api.Controllers
             }
             return _mapper.Map<DetallePedidoDto>(detallepedido);
         }
+        [HttpGet("consulta6")]
+        public async Task<IEnumerable<ProductoMasVendido>> GetProductoMasVendido()
+        {
+            var productos = await _unitOfWork.Productos.GetAllAsync();
+            var detallePedidos = await _unitOfWork.DetallePedidos.GetAllAsync();
+            var pedidos = await _unitOfWork.Pedidos.GetAllAsync();
+            var clientes = await _unitOfWork.Clientes.GetAllAsync();
+            var pagos = await _unitOfWork.Pagos.GetAllAsync();
+
+            var consultas = from producto in productos
+                            join detallePedido in detallePedidos
+                            on producto.CodigoProducto equals detallePedido.CodigoProducto
+                            join pedido in pedidos
+                            on detallePedido.CodigoPedido equals pedido.CodigoPedido
+                            join cliente in clientes
+                            on pedido.CodigoCliente equals cliente.CodigoCliente
+                            join pago in pagos
+                            on cliente.CodigoCliente equals pago.CodigoCliente
+                            select new ProductoMasVendido
+                            {
+                                NombreProducto = producto.Nombre
+                            };
+
+            return consultas.Distinct();
+        }
+
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

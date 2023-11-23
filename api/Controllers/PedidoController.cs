@@ -7,6 +7,7 @@ using Domain.Entities;
 using Domain.Interfaces;
 using Api.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using api.Dtos;
 
 namespace Api.Controllers
 {
@@ -42,6 +43,58 @@ namespace Api.Controllers
             return _mapper.Map<PedidoDto>(pedido);
         }
         
+
+        [HttpGet("consulta1")]
+        public async Task<IEnumerable<PedidoByCliente>> GetPedidoByCliente()
+        {
+            var clientes = await _unitOfWork.Clientes.GetAllAsync();
+            var pedidos = await _unitOfWork.Pedidos.GetAllAsync();
+
+            var consultas = from cliente in clientes
+                            join pedido in pedidos
+                            on cliente.CodigoCliente equals pedido.CodigoCliente
+                            select new PedidoByCliente
+                            {
+                                CodigoCliente = cliente.CodigoCliente,
+                                FechaEsperada = pedido.FechaEsperada.Value,
+                                FechaEntrega = pedido.FechaEntrega.Value,
+                                Demorados = pedido.FechaEntrega > pedido.FechaEsperada ? "Si" : "No"
+                            };
+
+            return consultas;
+        }
+
+        [HttpGet("consulta5")]
+        public async Task<IEnumerable<ProductoVenta>> GetProductoVenta()
+        {
+            var productos = await _unitOfWork.Productos.GetAllAsync();
+            var detallePedidos = await _unitOfWork.DetallePedidos.GetAllAsync();
+            var pedidos = await _unitOfWork.Pedidos.GetAllAsync();
+            var pagos = await _unitOfWork.Pagos.GetAllAsync();
+            var clientes = await _unitOfWork.Clientes.GetAllAsync();
+
+            var consultas = from producto in productos
+                            join detallePedido in detallePedidos
+                            on producto.CodigoProducto equals detallePedido.CodigoProducto
+                            join pedido in pedidos
+                            on detallePedido.CodigoPedido equals pedido.CodigoPedido
+                            join Cliente in clientes
+                            on pedido.CodigoCliente equals Cliente.CodigoCliente
+                            join pago in pagos
+                            on Cliente.CodigoCliente equals pago.CodigoCliente
+                            
+                            where producto.PrecioVenta * detallePedido.Cantidad > 3000
+                            select new ProductoVenta
+                            {
+                                NombreProducto = producto.Nombre,
+                                UnidadesVendidas = detallePedido.Cantidad,
+                                TotalFacturado = producto.PrecioVenta * detallePedido.Cantidad,
+                                TotalFacturadoImpuestos = (producto.PrecioVenta * detallePedido.Cantidad) * 1.21M
+                            }; 
+                            
+            return consultas;
+        }
+
 
 
         [HttpPost]

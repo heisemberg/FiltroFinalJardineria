@@ -41,6 +41,35 @@ namespace Api.Controllers
             }
             return _mapper.Map<EmpleadoDto>(empleado);
         }
+
+        [HttpGet("consulta9")]
+        public async Task<IEnumerable<Empleado>> GetEmpleadosSinClientes()
+        {
+            var empleados = await _unitOfWork.Empleados.GetAllAsync();
+            var oficinas = await _unitOfWork.Oficinas.GetAllAsync();
+            var clientes = await _unitOfWork.Clientes.GetAllAsync();
+            var consultas = from empleado in empleados
+                            join cliente in clientes
+                            on empleado.CodigoEmpleado equals cliente.CodigoEmpleadoRepVentas into clientesEmpleados
+                            from cliente in clientesEmpleados.DefaultIfEmpty()
+                            join oficina in oficinas
+                            on empleado.CodigoOficina equals oficina.CodigoOficina
+                            where cliente == null
+                            select new Empleado
+                            {
+                                CodigoEmpleado = empleado.CodigoEmpleado,
+                                Nombre = empleado.Nombre,
+                                Apellido1 = empleado.Apellido1,
+                                Apellido2 = empleado.Apellido2,
+                                Extension = empleado.Extension,
+                                Email = empleado.Email,
+                                CodigoOficina = empleado.CodigoOficina,
+                                CodigoJefe = empleado.CodigoJefe,
+                                Puesto = empleado.Puesto,
+                                
+                            };
+            return consultas;
+        }
         
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]

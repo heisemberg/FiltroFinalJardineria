@@ -7,6 +7,7 @@ using Domain.Entities;
 using Domain.Interfaces;
 using Api.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using api.Dtos;
 
 namespace Api.Controllers
 {
@@ -41,8 +42,71 @@ namespace Api.Controllers
             }
             return _mapper.Map<ClienteDto>(cliente);
         }
-                
+ 
+        
+        [HttpGet("consulta2")]
+        public async Task<IEnumerable<ClienteNoPagos>> GetClienteNoPagos()
+        {
+            var clientes = await _unitOfWork.Clientes.GetAllAsync();
+            var pagos = await _unitOfWork.Pagos.GetAllAsync();
+            var empleados = await _unitOfWork.Empleados.GetAllAsync();
+            var oficinas = await _unitOfWork.Oficinas.GetAllAsync();
 
+            var consultas = from cliente in clientes
+                            join pago in pagos
+                            on cliente.CodigoCliente equals pago.CodigoCliente into pagosClientes
+                            from pago in pagosClientes.DefaultIfEmpty()
+                            join empleado in empleados
+                            on cliente.CodigoEmpleadoRepVentas equals empleado.CodigoEmpleado
+                            join oficina in oficinas
+                            on empleado.CodigoOficina equals oficina.CodigoOficina
+                            select new ClienteNoPagos
+                            {
+                                NombreCliente = cliente.NombreCliente,
+                                NombreRepVentas = empleado.Nombre,
+                                CiudadOficina = oficina.Ciudad
+                            };
+            return consultas;
+        }
+
+        [HttpGet("consulta7")]
+        public async Task<IEnumerable<ClientePedidos>> GetClientePedidos()
+        {
+            var clientes = await _unitOfWork.Clientes.GetAllAsync();
+            var pedidos = await _unitOfWork.Pedidos.GetAllAsync();
+
+            var consultas = from cliente in clientes
+                            join pedido in pedidos
+                            on cliente.CodigoCliente equals pedido.CodigoCliente into pedidosClientes
+                            from pedido in pedidosClientes.DefaultIfEmpty()
+                            select new ClientePedidos
+                            {
+                                NombreCliente = cliente.NombreCliente,
+                                CantidadPedidos = pedido.CodigoPedido
+                            };
+            return consultas;
+        }
+
+        [HttpGet("consulta8")]
+        public async Task<IEnumerable<ClienteOficina>> GetClienteOficina()
+        {
+            var clientes = await _unitOfWork.Clientes.GetAllAsync();
+            var empleados = await _unitOfWork.Empleados.GetAllAsync();
+            var oficinas = await _unitOfWork.Oficinas.GetAllAsync();
+
+            var consultas = from cliente in clientes
+                            join empleado in empleados
+                            on cliente.CodigoEmpleadoRepVentas equals empleado.CodigoEmpleado
+                            join oficina in oficinas
+                            on empleado.CodigoOficina equals oficina.CodigoOficina
+                            select new ClienteOficina
+                            {
+                                NombreCliente = cliente.NombreCliente,
+                                NombreRepVentas = empleado.Nombre,
+                                CiudadOficina = oficina.Ciudad
+                            };
+            return consultas;
+        }
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
