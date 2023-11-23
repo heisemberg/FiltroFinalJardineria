@@ -8,7 +8,7 @@ namespace Domain.Interfaces
 {
     public interface IPedido :IGenericRepository<Pedido>
     {
-  
+
     
     }
 }
